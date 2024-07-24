@@ -38,7 +38,8 @@ services:
     restart: no
     image: gitlab/gitlab-runner:alpine
     depends_on:
-      - gitlab-server
+      gitlab-server:
+        condition: service_started
     environment:
       - CI_SERVER_URL=${CI_SERVER_URL}
       - REGISTRATION_TOKEN=${REGISTRATION_TOKEN}
