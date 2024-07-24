@@ -1,0 +1,62 @@
+services:
+  gitlab-server:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: on-failure
+    hostname: ${CI_SERVER_URL}
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '${CI_SERVER_URL}'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2424
+        gitlab_rails['initial_root_password'] = '${INITIAL_PASSWORD}'
+    ports:
+      - 8929:8929
+      - 443:443
+      - 2424:22
+    volumes:
+      - ./config:/etc/gitlab
+      - ./logs:/var/log/gitlab
+      - ./data:/var/opt/gitlab
+    shm_size: 256m
+    networks:
+      - gitlab-network
+
+  runner:
+    restart: on-failure
+    image: registry.gitlab.com/gitlab-org/gitlab-runner:alpine
+    depends_on:
+      - gitlab-server
+    volumes:
+      - ./config:/etc/gitlab-runner:z
+      - ./data/runner/cache:/cache
+    environment:
+      - DOCKER_HOST=tcp://${DOCKER_HOST}:2375
+    networks:
+      - gitlab-network
+
+  register-runner:
+    restart: no
+    image: gitlab/gitlab-runner:alpine
+    depends_on:
+      - gitlab-server
+    environment:
+      - CI_SERVER_URL=${CI_SERVER_URL}
+      - REGISTRATION_TOKEN=${REGISTRATION_TOKEN}
+    command:
+      - register
+      - --non-interactive
+      - --locked=false
+      - --name=gitlab-local-runner
+      - --executor=docker
+      - --docker-image=docker:stable
+      - --docker-volumes=/var/run/docker.sock:/var/run/docker.sock
+      - --docker-network-mode=gitlab-network
+    volumes:
+      - ./config:/etc/gitlab-runner:z
+      - ./data/dind/docker:/var/lib/docker
+    networks:
+      - gitlab-network
+
+networks:
+  gitlab-network:
+    name: gitlab-network
