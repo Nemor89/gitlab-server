@@ -1,9 +1,9 @@
 services:
   gitlab-server:
     image: gitlab/gitlab-ce:latest
-    container_name: gitlab
+    container_name: gitlab-server
     restart: on-failure
-    hostname: ${CI_SERVER_URL}
+    hostname: gitlab.local.com
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url '${CI_SERVER_URL}'
@@ -23,14 +23,15 @@ services:
 
   runner:
     restart: on-failure
-    image: registry.gitlab.com/gitlab-org/gitlab-runner:alpine
+    image: gitlab/gitlab-runner:alpine
     depends_on:
-      - gitlab-server
+      gitlab-server:
+        condition: service_started
     volumes:
       - ./config:/etc/gitlab-runner:z
       - ./data/runner/cache:/cache
     environment:
-      - DOCKER_HOST=tcp://${DOCKER_HOST}:2375
+      - DOCKER_HOST=tcp://host.docker.internal:2375
     networks:
       - gitlab-network
 
