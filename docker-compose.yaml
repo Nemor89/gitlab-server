@@ -59,6 +59,19 @@ services:
     networks:
       - gitlab-network
 
+  nexus:
+    image: sonatype/nexus3:latest
+    volumes:
+      - nexus-data:/nexus-data
+    ports:
+      - 8081:8081
+    restart: on-failure
+    networks:
+      - gitlab-network
+
+volumes:
+  nexus-data: {}
+
 networks:
   gitlab-network:
     name: gitlab-network
