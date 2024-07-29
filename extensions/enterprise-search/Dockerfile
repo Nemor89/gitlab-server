@@ -1,0 +1,3 @@
+ARG ELASTIC_VERSION
+
+FROM enterprise-search:${ELASTIC_VERSION}
